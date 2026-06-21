@@ -1,0 +1,30 @@
+{
+  "channels": {
+    "slack": {
+      "enabled": true,
+      "mode": "socket",
+      "appToken": {
+        "source": "env",
+        "provider": "default",
+        "id": "SLACK_APP_TOKEN"
+      },
+      "botToken": {
+        "source": "env",
+        "provider": "default",
+        "id": "SLACK_BOT_TOKEN"
+      }
+    }
+  },
+  "models": {
+    "default": {
+      "provider": "ollama",
+      "baseUrl": "http://localhost:11434/v1",
+      "model": "qwen2.5-coder",
+      "apiKey": {
+        "source": "env",
+        "provider": "default",
+        "id": "OLLAMA_API_KEY"
+      }
+    }
+  }
+}

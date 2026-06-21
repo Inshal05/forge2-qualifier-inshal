@@ -1,36 +1,31 @@
 # Architecture
 
-## Brain
+## Brain: Hermes
 
-Hermes Agent
+Hermes owns planning, memory, reusable skills and autonomous progress updates.
 
-Responsibilities:
+- Memory: `memory_store/`
+- Skill: `skills/status-report/SKILL.md`
+- Autonomous run: `hermes.py` schedules `auto_status`
+- Model route: Groq free model for planning (`openai/gpt-oss-120b` or `llama-3.3-70b-versatile`)
 
-* Planning
-* Memory
-* Skill execution
-* Autonomous runs
+## Hands: OpenClaw
 
-Model:
+OpenClaw owns code edits, command execution and implementation reports.
 
-* Groq llama-3.3-70b-versatile
+- Slack config: `openclaw.json`
+- Model route: Ollama `qwen2.5-coder` at `http://localhost:11434/v1`
+- Expected report format: What I Did / What's Left / What Needs Your Call
 
-## Hands
+## Human-In-The-Loop Channels
 
-OpenClaw (pending integration)
+- `#sprint-main`: human goal, Hermes plan, approvals and decisions
+- `#agent-coder`: Hermes assigns coding work; OpenClaw reports implementation
+- `#agent-log`: raw agent activity, autonomous run output and audit trail
 
-Responsibilities:
+## App
 
-* Code generation
-* Running commands
-* Reporting status
+- `frontend/`: React/Vite Kanban UI
+- `backend/`: Laravel API source skeleton with boards, lists, cards, members and tags
 
-## Communication
-
-Slack
-
-Channels:
-
-* #sprint-main
-* #agent-coder
-* #agent-log
+The frontend can demo independently with local storage. The backend is ready to install and migrate on a PHP 8.2+ machine.

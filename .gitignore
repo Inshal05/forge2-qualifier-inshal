@@ -3,3 +3,11 @@ venv/
 __pycache__/
 *.pyc
 memory/*.json
+memory_store/*.json
+!memory_store/memory.json
+node_modules/
+dist/
+vendor/
+backend/.env
+frontend/.env
+*.log

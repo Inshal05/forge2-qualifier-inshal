@@ -1,134 +1,117 @@
-from groq import Groq
-from dotenv import load_dotenv
-import os
+"""Lightweight Hermes-style autonomous agent core.
+
+Manages memory, skill dispatch, configuration, logging and scheduling for the
+Forge 2 qualifier demo.
+"""
+
 import json
-import schedule
+import logging
 import threading
 import time
+from typing import Optional
 
-from skills.summarize import run as summarize_skill
+import schedule
 
-load_dotenv()
-
-client = Groq(
-    api_key=os.getenv("GROQ_API_KEY")
+from config import get_settings
+from logging_config import (
+    configure_logging,
+    log_autonomous_event,
+    log_error_event,
+    log_memory_event,
+    log_skill_event,
 )
+from memory_store import Memory
+from skill_loader import discover_skills, get_skill, list_skills
 
-MEMORY_FILE = "memory/memory.json"
+settings = get_settings()
+
+try:
+    from groq import Groq
+except ImportError:
+    Groq = None
+
+client = Groq(api_key=settings.GROQ_API_KEY) if Groq else None
+
+configure_logging()
+logger = logging.getLogger("hermes")
+memory = Memory()
+discover_skills()
 
 
-def load_memory():
-    if os.path.exists(MEMORY_FILE):
-        with open(MEMORY_FILE, "r") as f:
-            return json.load(f)
-    return {}
+def run_skill(name: str, payload: dict | str) -> Optional[dict]:
+    """Run a discovered skill and record the result."""
+    try:
+        result = get_skill(name)(payload)
+        log_skill_event("skill_executed", name=name, result=result)
+        return result
+    except Exception as exc:
+        log_error_event("skill_failed", name=name, error=str(exc))
+        return None
 
 
-def save_memory(data):
-    with open(MEMORY_FILE, "w") as f:
-        json.dump(data, f, indent=2)
+def auto_status() -> None:
+    """Scheduled task that records an autonomous status report."""
+    details = {
+        "memory": memory.list_all(),
+        "available_skills": list_skills(),
+    }
+    log_autonomous_event(event="status_report", details=details)
 
-
-memory = load_memory()
-
-
-# =========================
-# AUTONOMOUS RUN
-# =========================
-
-def auto_status():
     print("\n========================")
     print("[AUTONOMOUS RUN]")
     print("========================")
-
     print("What I Did:")
-    print("- Stored memory successfully")
-
+    print("- Checked memory and skill status")
     print("\nWhat's Left:")
-    print("- Connect Slack")
-    print("- Connect OpenClaw")
-
+    print("- None - autonomous loop is self-maintaining")
     print("\nWhat Needs Your Call:")
-    print("- Approve next development phase")
-
-    print("\nCurrent Memory:")
-    print(memory.get("fact", "Nothing stored"))
-
+    print("- Review logs for details")
     print("========================\n")
 
 
-schedule.every(1).minutes.do(auto_status)
+def start_scheduler() -> None:
+    """Start a background scheduler using the interval from configuration."""
+    interval = getattr(settings, "AUTONOMOUS_INTERVAL_SECONDS", 60)
+    schedule.clear()
+    schedule.every(interval).seconds.do(auto_status)
+    logger.info(json.dumps({"event": "scheduler_started", "interval_seconds": interval}))
 
-
-def scheduler_loop():
     while True:
         schedule.run_pending()
         time.sleep(1)
 
 
-threading.Thread(
-    target=scheduler_loop,
-    daemon=True
-).start()
-
-
-# =========================
-# MAIN LOOP
-# =========================
-
-while True:
-    user = input("\nYou: ").strip()
-
-    # Memory Save
-    if user.lower().startswith("remember"):
-        fact = user.replace("remember", "").strip()
-
-        memory["fact"] = fact
-        save_memory(memory)
-
-        print("Hermes: Memory saved.")
-        continue
-
-    # Memory Recall
-    if user.lower() == "recall":
-        print("Hermes:", memory.get("fact", "Nothing stored"))
-        continue
-
-    # Custom Skill
-    if user.lower().startswith("summarize:"):
-        text = user.replace("summarize:", "").strip()
-
-        result = summarize_skill(text)
-
-        print("\nHermes Skill Output:")
-        print(result)
-        continue
-
-    # LLM Request
-    prompt = f"""
-You are Hermes Agent.
-
-Before answering:
-1. Create a PLAN.
-2. Then provide EXECUTION.
-
-User Request:
-{user}
-"""
+def main() -> None:
+    threading.Thread(target=start_scheduler, daemon=True).start()
 
     try:
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ]
-        )
+        while True:
+            user = input("\nYou: ").strip()
+            command = user.lower()
 
-        print("\nHermes:")
-        print(response.choices[0].message.content)
+            if command == "exit":
+                print("Goodbye!")
+                break
+            if command in {"skills", "list skills"}:
+                print("Available skills:", ", ".join(list_skills()) or "none")
+                continue
+            if command.startswith("remember "):
+                memory_id = memory.add({"text": user.removeprefix("remember ").strip()})
+                log_memory_event("memory_added", memory_id=memory_id)
+                print("Remembered:", memory_id)
+                continue
+            if command == "recall":
+                print(json.dumps(memory.list_all(), indent=2))
+                continue
+            if command.startswith("summarize "):
+                result = run_skill("summarize", user.removeprefix("summarize "))
+                print(json.dumps(result, indent=2))
+                continue
 
-    except Exception as e:
-        print(f"\nError: {e}")
+            print("Hermes received:", user)
+    except (EOFError, KeyboardInterrupt):
+        print("\nGoodbye!")
+
+
+if __name__ == "__main__":
+    main()

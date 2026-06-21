@@ -1,14 +1,26 @@
 # Forge 2 Qualifier
 
-## Hermes Progress
+Hermes is a lightweight autonomous agent built for the Forge 2 qualifier.
+
+## Features
 
 - Memory ✅
 - Recall ✅
-- Custom Skill ✅
+- Custom Skill System ✅
 - Autonomous Run ✅
 
-## Model
+## Project Structure
 
-- Groq (llama-3.3-70b-versatile)
-
-Work in progress.
+```text
+forge2/
+├── hermes.py
+├── memory/
+│   └── memory.json
+├── skills/
+│   ├── summarize.py
+│   └── status-report/
+│       └── SKILL.md
+├── ARCHITECTURE.md
+├── agent-log.md
+├── .env.example
+└── README.md

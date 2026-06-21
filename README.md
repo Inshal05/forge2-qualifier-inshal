@@ -46,6 +46,30 @@ php artisan serve
 
 API base URL: `http://127.0.0.1:8000/api`.
 
+### Hermes -> OpenClaw
+
+OpenClaw must be installed and configured before Hermes can delegate tasks:
+
+```bash
+npm install -g openclaw@latest
+openclaw doctor
+openclaw status
+```
+
+Run Hermes:
+
+```bash
+python hermes.py
+```
+
+Delegate one real task to OpenClaw from the Hermes prompt:
+
+```text
+openclaw Summarize the current Forge 2 repo status in three bullets.
+```
+
+Hermes sends the task through `openclaw agent --agent main --session-key agent:main:hermes-openclaw --json`. Every execution is appended to `logs/openclaw_tasks.jsonl` with command, exit code, duration, stdout and stderr.
+
 ## Models Used
 
 - Hermes brain: Groq free model such as `openai/gpt-oss-120b` or `llama-3.3-70b-versatile` for planning.

@@ -21,6 +21,7 @@ from logging_config import (
     log_skill_event,
 )
 from memory_store import Memory
+from openclaw_bridge import OpenClawUnavailableError, send_task_to_openclaw
 from skill_loader import discover_skills, get_skill, list_skills
 
 settings = get_settings()
@@ -106,6 +107,28 @@ def main() -> None:
             if command.startswith("summarize "):
                 result = run_skill("summarize", user.removeprefix("summarize "))
                 print(json.dumps(result, indent=2))
+                continue
+            if command.startswith("openclaw "):
+                prompt = user.removeprefix("openclaw ").strip()
+                try:
+                    result = send_task_to_openclaw(prompt)
+                except OpenClawUnavailableError as exc:
+                    log_error_event("openclaw_unavailable", error=str(exc))
+                    print(str(exc))
+                    continue
+                except Exception as exc:
+                    log_error_event("openclaw_task_failed", error=str(exc))
+                    print(f"OpenClaw task failed before execution: {exc}")
+                    continue
+
+                print(json.dumps({
+                    "task_id": result.task_id,
+                    "ok": result.ok,
+                    "returncode": result.returncode,
+                    "duration_seconds": result.duration_seconds,
+                    "stdout": result.stdout,
+                    "stderr": result.stderr,
+                }, indent=2))
                 continue
 
             print("Hermes received:", user)

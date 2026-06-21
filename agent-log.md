@@ -21,12 +21,14 @@ Plan a tiny Trello-style Kanban: Laravel API (SQLite) + React (Vite). Entities: 
 - Added Kanban frontend under `frontend/`.
 - Added Laravel API source skeleton under `backend/`.
 - Added sanitized config/docs/evidence placeholders.
+- Added a real Hermes -> OpenClaw bridge using `openclaw agent`.
 
 **What's Left**
 
 - Install PHP 8.2+ and Composer to run the Laravel API locally.
 - Capture real Slack screenshots/logs.
 - Deploy the frontend and add the live URL.
+- Resolve OpenClaw doctor warnings for Slack group allowlist, ownerAllowFrom, message tool allowlist and plugin relinks.
 
 **What Needs Your Call**
 
